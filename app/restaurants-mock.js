@@ -111,19 +111,19 @@ class Restaurants {
     }
 
     async increaseCount(id) {
-        return this.db.update(this.TABLE_NAME, { 'count': 'count + 1' }, { 'id': id });
+        this.db.find((elem) => elem.id === id).count++;
     }
 
     async increaseScore(id, score) {
-        return this.db.update(this.TABLE_NAME, { 'score': `score + ${score}` }, { 'id': id });
+        this.db.find((elem) => elem.id === id).score += score;
     }
 
     async maximizeScore(id) {
-        return this.db.update(this.TABLE_NAME, { 'score': 100.0 }, { 'id': id });
+        this.db.find((elem) => elem.id === id).score = 100.0;
     }
 
     async decayScore(score) {
-        return this.db.update(this.TABLE_NAME, { 'score': score / 2 });
+        this.db.forEach((elem) => {elem.score /= 2;});
     }
 }
 

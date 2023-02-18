@@ -46,66 +46,9 @@ app.action('load_more_option', async ({ body, ack, say }) => {
 app.action('add_option', async ({ ack, body, context }) => {
     try {
         await ack();
+        const text = body.actions[0].value;
 
-        const result = await app.client.views.open({
-            trigger_id: body.trigger_id,
-            view: {
-                type: 'modal',
-                callback_id: 'add_option_modal',
-                title: {
-                    type: 'plain_text',
-                    text: 'Add option'
-                },
-                submit: {
-                    type: 'plain_text',
-                    text: 'Submit'
-                },
-                close: {
-                    type: 'plain_text',
-                    text: 'Cancel'
-                },
-                blocks: [
-                    {
-                        type: 'input',
-                        block_id: 'my_input',
-                        label: {
-                            type: 'plain_text',
-                            text: 'Please enter a new option.'
-                        },
-                        element: {
-                            type: 'plain_text_input',
-                            action_id: 'my_input',
-                            placeholder: {
-                                type: 'plain_text',
-                                text: 'Enter text here'
-                            },
-                            max_length: 255
-                        }
-                    }
-                ],
-                private_metadata: JSON.stringify({
-                    'response_url': body.response_url,
-                    'message': {
-                        'blocks': body.message.blocks,
-                        'ts': body.message.ts,
-                    },
-                    'channel': {
-                        'id': body.channel.id,
-                    },
-                }),
-            }
-        });
-    } catch (error) {
-        console.error(error);
-    }
-});
-
-app.view('add_option_modal', async ({ ack, body, view, context }) => {
-    try {
-        await ack();
-        const text = view.state.values.my_input.my_input.value;
-
-        const matches = text.match(/.*'([^']+)'.+(https:\/\/baemin\.me\/[^\s/$.?#].[^\s]*).*/);
+        const matches = text.match(/.*'([^']+)'.+(https:\/\/baemin\.me\/.[^\s]*).*/s);
         if (matches === null) {
             throw new Error('Provided option is malformed.');
         }
@@ -113,8 +56,7 @@ app.view('add_option_modal', async ({ ack, body, view, context }) => {
         const url = matches[2];
 
         let poll = new Poll();
-        const originalBody = JSON.parse(view.private_metadata);
-        poll.parse(originalBody.message.blocks);
+        poll.parse(body.message.blocks);
 
         let id;
         const res = await restaurants.getByName(name)
@@ -122,12 +64,12 @@ app.view('add_option_modal', async ({ ack, body, view, context }) => {
             id = await restaurants.create(name, url);
         } else {
             id = res[0].id;
-            if (poll.candidates.find((elem) => 
-            elem.name === name
-        )) {
-            // TODO add message
-            return;
-        }
+            if (poll.candidates.find((elem) =>
+                elem.name === name
+            )) {
+                // TODO add message
+                return;
+            }
         }
 
         poll.add(id, name, url);
@@ -135,9 +77,9 @@ app.view('add_option_modal', async ({ ack, body, view, context }) => {
         await web.chat.update({
             blocks: poll.stringify(),
             text: 'It is time to choose what to eat.',
-            channel: originalBody.channel.id,
-            ts: originalBody.message.ts,
-            response_url: originalBody.response_url
+            channel: body.channel.id,
+            ts: body.message.ts,
+            response_url: body.response_url
         });
     } catch (error) {
         console.error(error);
@@ -162,9 +104,10 @@ app.action('close_poll', async ({ body, ack, say }) => {
             response_url: body.response_url
         });
 
-        // todo see who won
+        const id = poll.getWinner().id;
         await restaurants.increaseCount(id);
         await restaurants.maximizeScore(id);
+        await restaurants.decayScore();
     } catch (error) {
         console.error(error);
     }

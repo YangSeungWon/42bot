@@ -28,7 +28,7 @@ ${this.voters.join(', ')}`
         const count = matches[4];
         const voters = matches[5].split(', ');
         return new Candidate(
-            id, name, url, parseInt(count, 10), voters, 
+            parseInt(id, 10), name, url, parseInt(count, 10), voters,
             block.block_id
         );
     }
@@ -48,7 +48,7 @@ ${this.voters.join(', ')}`
             return;
         }
         this.count -= 1;
-        this.voters = this.voters.filter((elem) => 
+        this.voters = this.voters.filter((elem) =>
             elem !== voter
         );
     }
@@ -80,8 +80,27 @@ class Poll {
             }
         }).concat([{
             "type": "divider",
-        }
-        , {
+        },
+        {
+            "type": 'input',
+            "dispatch_action": true,
+            "element": {
+                "type": 'plain_text_input',
+                "action_id": "add_option",
+                "dispatch_action_config": {
+                  "trigger_actions_on": ["on_character_entered"]
+                },
+                "placeholder": {
+                    "type": 'plain_text',
+                    "text": 'Paste here',
+                },
+            },
+            "label": {
+                "type": 'plain_text',
+                "text": "Add Option :whale2:",
+            },
+        },
+        {
             "type": "actions",
             "elements": [
                 {
@@ -92,15 +111,6 @@ class Poll {
                         "emoji": true,
                     },
                     "action_id": "load_more_option",
-                },
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "Add Option :whale2:",
-                        "emoji": true,
-                    },
-                    "action_id": "add_option",
                 },
                 {
                     "type": "button",
@@ -148,8 +158,8 @@ class Poll {
 
     parse(blocks) {
         for (let i = 0; i < blocks.length; i++) {
-            if (i >= blocks.length - 2) {
-                // Skip the last two elements
+            if (i >= blocks.length - 3) {
+                // Skip the last three elements
                 continue;
             }
             this.candidates.push(
@@ -165,17 +175,21 @@ class Poll {
     }
 
     vote(block_id, voter) {
-        const candidate = this.candidates.find((elem) => 
+        const candidate = this.candidates.find((elem) =>
             elem.block_id === block_id
         );
         candidate.vote(voter);
     }
 
     unvote(block_id, voter) {
-        const candidate = this.candidates.find((elem) => 
+        const candidate = this.candidates.find((elem) =>
             elem.block_id === block_id
         );
         candidate.unvote(voter);
+    }
+
+    getWinner() {
+        return this.candidates.reduce((prev, current) => (prev.voters.length > current.voters.length) ? prev : current);
     }
 }
 
