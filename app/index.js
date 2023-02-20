@@ -122,6 +122,7 @@ app.action('close_poll', async ({ body, ack, say }) => {
 
         const id = poll.getWinner().id;
         await restaurants.increaseCount(id);
+        await restaurants.decayScore();
         await restaurants.maximizeScore(id);
     } catch (error) {
         console.error(error);
