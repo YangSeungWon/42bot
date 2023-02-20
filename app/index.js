@@ -47,7 +47,8 @@ app.action('load_more_option', async ({ body, ack, say }) => {
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
-            response_url: body.response_url
+            response_url: body.response_url,
+            unfurl_links: false,
         });
     } catch (error) {
         console.error(error);
@@ -92,7 +93,8 @@ app.action('add_option', async ({ ack, body, context }) => {
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
-            response_url: body.response_url
+            response_url: body.response_url,
+            unfurl_links: false,
         });
     } catch (error) {
         console.error(error);
@@ -114,13 +116,13 @@ app.action('close_poll', async ({ body, ack, say }) => {
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
-            response_url: body.response_url
+            response_url: body.response_url,
+            unfurl_links: false,
         });
 
         const id = poll.getWinner().id;
         await restaurants.increaseCount(id);
         await restaurants.maximizeScore(id);
-        await restaurants.decayScore();
     } catch (error) {
         console.error(error);
     }
@@ -140,7 +142,8 @@ app.action('vote', async ({ body, ack, say }) => {
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
-            response_url: body.response_url
+            response_url: body.response_url,
+            unfurl_links: false,
         });
     } catch (error) {
         console.error(error);
@@ -159,6 +162,7 @@ app.command('/42', async ({ command, ack, say }) => {
     await say({
         blocks: poll.stringify(),
         text: 'It is time to choose what to eat.',
+        unfurl_links: false,
     });
 });
 
