@@ -32,19 +32,19 @@ class Restaurants {
     }
 
     async increaseCount(id) {
-        return this.db.update(this.TABLE_NAME, { 'count': 'count + 1' }, { 'id': id });
+        return this.db.increase(this.TABLE_NAME, { 'count': 1 }, { 'id': id });
     }
 
     async increaseScore(id, score) {
-        return this.db.update(this.TABLE_NAME, { 'score': `score + ${score}` }, { 'id': id });
+        return this.db.increase(this.TABLE_NAME, { 'score': score }, { 'id': id });
     }
 
     async maximizeScore(id) {
         return this.db.update(this.TABLE_NAME, { 'score': 100.0 }, { 'id': id });
     }
 
-    async decayScore(score) {
-        return this.db.update(this.TABLE_NAME, { 'score': score / 2 });
+    async decayScore() {
+        return this.db.multiply(this.TABLE_NAME, { 'score': 0.9 });
     }
 }
 

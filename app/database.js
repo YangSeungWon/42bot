@@ -24,7 +24,7 @@ class Database {
     }
   }
 
-  async select(table, where = {}, orderBy = '', limit_num = false, limit_from = false) {
+  async select(table, where = {}, orderBy = '', limit_num = false, limit_from = 0) {
     const keys = Object.keys(where);
     const values = keys.map(key => where[key]);
 
@@ -36,10 +36,7 @@ class Database {
       sql += ` ORDER BY ${mysql.escapeId(orderBy)}`;
     }
     if (limit_num) {
-      sql += ` LIMIT ${limit_num}`;
-      if (limit_from) {
-        sql += `, ${limit_from}`;
-      }
+      sql += ` LIMIT ${limit_from}, ${limit_num}`;
     }
 
     const result = await this.execute(sql, values);
@@ -60,6 +57,39 @@ class Database {
     const set = Object.keys(values).map(key => `${mysql.escapeId(key)} = ?`).join(', ');
     const whereClause = Object.keys(where).map(key => `${mysql.escapeId(key)} = ?`).join(' AND ');
     const valuesList = [...Object.values(values), ...Object.values(where)];
+
+    const sql = `UPDATE ${table} SET ${set} WHERE ${whereClause}`;
+
+    const result = await this.execute(sql, valuesList);
+    return result.affectedRows;
+  }
+  
+  async updateWithTimestamp(table, values, where = {}) {
+    const set = Object.keys(values).map(key => `${mysql.escapeId(key)} = ?`).join(', ');
+    const whereClause = Object.keys(where).map(key => `${mysql.escapeId(key)} = ?`).join(' AND ');
+    const valuesList = [...Object.values(values), ...Object.values(where)];
+
+    const sql = `UPDATE ${table} SET ${set}, last_changed = NOW() WHERE ${whereClause}`;
+
+    const result = await this.execute(sql, valuesList);
+    return result.affectedRows;
+  }
+
+  async increase(table, values, where = {}) {
+    const set = Object.keys(values).map(key => `${mysql.escapeId(key)} = ${mysql.escapeId(key)} + ${parseInt(values[key],10)}`).join(', ');
+    const whereClause = Object.keys(where).map(key => `${mysql.escapeId(key)} = ?`).join(' AND ');
+    const valuesList = [...Object.values(where)];
+
+    const sql = `UPDATE ${table} SET ${set} WHERE ${whereClause}`;
+
+    const result = await this.execute(sql, valuesList);
+    return result.affectedRows;
+  }
+
+  async multiply(table, values, where = {}) {
+    const set = Object.keys(values).map(key => `${mysql.escapeId(key)} = ${mysql.escapeId(key)} * ${parseInt(values[key],10)}`).join(', ');
+    const whereClause = Object.keys(where).map(key => `${mysql.escapeId(key)} = ?`).join(' AND ');
+    const valuesList = [...Object.values(where)];
 
     const sql = `UPDATE ${table} SET ${set} WHERE ${whereClause}`;
 

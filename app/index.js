@@ -8,7 +8,7 @@ const app = new App({
 const web = new WebClient(process.env.SLACK_BOT_TOKEN);
 const PORT = 24842;
 
-const Restaurants = require('./restaurants-mock');
+const Restaurants = require('./restaurants');
 const restaurants = new Restaurants({
     host: 'db',
     user: process.env.MYSQL_USER,
