@@ -58,7 +58,10 @@ class Database {
     const whereClause = Object.keys(where).map(key => `${mysql.escapeId(key)} = ?`).join(' AND ');
     const valuesList = [...Object.values(values), ...Object.values(where)];
 
-    const sql = `UPDATE ${table} SET ${set} WHERE ${whereClause}`;
+    let sql = `UPDATE ${table} SET ${set}`;
+    if (where.keys.length > 0) {
+      sql += ` WHERE ${whereClause}`;
+    }
 
     const result = await this.execute(sql, valuesList);
     return result.affectedRows;
@@ -69,29 +72,38 @@ class Database {
     const whereClause = Object.keys(where).map(key => `${mysql.escapeId(key)} = ?`).join(' AND ');
     const valuesList = [...Object.values(values), ...Object.values(where)];
 
-    const sql = `UPDATE ${table} SET ${set}, last_changed = NOW() WHERE ${whereClause}`;
+    let sql = `UPDATE ${table} SET ${set}, last_changed = NOW()`;
+    if (where.keys.length > 0) {
+      sql += ` WHERE ${whereClause}`;
+    }
 
     const result = await this.execute(sql, valuesList);
     return result.affectedRows;
   }
 
   async increase(table, values, where = {}) {
-    const set = Object.keys(values).map(key => `${mysql.escapeId(key)} = ${mysql.escapeId(key)} + ${parseInt(values[key],10)}`).join(', ');
+    const set = Object.keys(values).map(key => `${mysql.escapeId(key)} = ${mysql.escapeId(key)} + ${parseFloat(values[key],10)}`).join(', ');
     const whereClause = Object.keys(where).map(key => `${mysql.escapeId(key)} = ?`).join(' AND ');
     const valuesList = [...Object.values(where)];
 
-    const sql = `UPDATE ${table} SET ${set} WHERE ${whereClause}`;
+    let sql = `UPDATE ${table} SET ${set}`;
+    if (where.keys.length > 0) {
+      sql += ` WHERE ${whereClause}`;
+    }
 
     const result = await this.execute(sql, valuesList);
     return result.affectedRows;
   }
 
   async multiply(table, values, where = {}) {
-    const set = Object.keys(values).map(key => `${mysql.escapeId(key)} = ${mysql.escapeId(key)} * ${parseInt(values[key],10)}`).join(', ');
+    const set = Object.keys(values).map(key => `${mysql.escapeId(key)} = ${mysql.escapeId(key)} * ${parseFloat(values[key],10)}`).join(', ');
     const whereClause = Object.keys(where).map(key => `${mysql.escapeId(key)} = ?`).join(' AND ');
     const valuesList = [...Object.values(where)];
 
-    const sql = `UPDATE ${table} SET ${set} WHERE ${whereClause}`;
+    let sql = `UPDATE ${table} SET ${set}`;
+    if (where.keys.length > 0) {
+      sql += ` WHERE ${whereClause}`;
+    }
 
     const result = await this.execute(sql, valuesList);
     return result.affectedRows;
@@ -101,7 +113,10 @@ class Database {
     const whereClause = Object.keys(where).map(key => `${mysql.escapeId(key)} = ?`).join(' AND ');
     const values = Object.values(where);
 
-    const sql = `DELETE FROM ${table} WHERE ${whereClause}`;
+    let sql = `DELETE FROM ${table}`;
+    if (where.keys.length > 0) {
+      sql += ` WHERE ${whereClause}`;
+    }
 
     const result = await this.execute(sql, values);
     return result.affectedRows;
