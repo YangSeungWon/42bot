@@ -82,25 +82,6 @@ class Poll {
             "type": "divider",
         },
         {
-            "type": 'input',
-            "dispatch_action": true,
-            "element": {
-                "type": 'plain_text_input',
-                "action_id": "add_option",
-                "dispatch_action_config": {
-                  "trigger_actions_on": ["on_character_entered"]
-                },
-                "placeholder": {
-                    "type": 'plain_text',
-                    "text": 'Paste here',
-                },
-            },
-            "label": {
-                "type": 'plain_text',
-                "text": "Add Option :whale2:",
-            },
-        },
-        {
             "type": "actions",
             "elements": [
                 {
@@ -141,6 +122,25 @@ class Poll {
                     "action_id": "close_poll",
                 }
             ]
+        },
+        {
+            "type": 'input',
+            "dispatch_action": true,
+            "element": {
+                "type": 'plain_text_input',
+                "action_id": "add_option",
+                "dispatch_action_config": {
+                  "trigger_actions_on": ["on_character_entered"]
+                },
+                "placeholder": {
+                    "type": 'plain_text',
+                    "text": 'Paste here',
+                },
+            },
+            "label": {
+                "type": 'plain_text',
+                "text": "Add Option :whale2:",
+            },
         }]);
     }
 
