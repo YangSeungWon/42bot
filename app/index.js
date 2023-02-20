@@ -20,6 +20,14 @@ const restaurants = new Restaurants({
 const Poll = require('./poll');
 
 
+async function postEphemeral(channelId, userId, text) {
+    const result = await web.chat.postEphemeral({
+        channel: channelId,
+        user: userId,
+        text: text
+    });
+}
+
 
 app.action('load_more_option', async ({ body, ack, say }) => {
     try {
@@ -28,6 +36,10 @@ app.action('load_more_option', async ({ body, ack, say }) => {
         let poll = new Poll();
         poll.parse(body.message.blocks);
         const res = (await restaurants.getNext(poll.candidates.length))[0];
+        if (!res) {
+            postEphemeral(body.channel.id, body.user.id, 'There is no more options to load from the database.');
+            throw new Error('There is no more options to load from the database.');
+        }
         poll.add(res['id'], res['name'], res['url']);
 
         await web.chat.update({
@@ -49,7 +61,8 @@ app.action('add_option', async ({ ack, body, context }) => {
         const text = body.actions[0].value;
 
         const matches = text.match(/.*'([^']+)'.+(https:\/\/baemin\.me\/.[^\s]*).*/s);
-        if (matches === null) {
+        if (!text || matches === null) {
+            // postEphemeral(body.channel.id, body.user.id, 'Provided option is malformed.');
             throw new Error('Provided option is malformed.');
         }
         const name = matches[1];
@@ -67,7 +80,7 @@ app.action('add_option', async ({ ack, body, context }) => {
             if (poll.candidates.find((elem) =>
                 elem.name === name
             )) {
-                // TODO add message
+                postEphemeral(body.channel.id, body.user.id, 'The option you have added is already in the poll.');
                 return;
             }
         }
