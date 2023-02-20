@@ -4,7 +4,10 @@ services:
     build: ./nginx
     restart: always
     ports:
-      - 24842:24842
+      - 24842:80
+      
+    links:
+      - app
 
   app:
     build: ./app
@@ -16,18 +19,23 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
 
-
     links:
-      - mysql
+      - db
 
   db:
-    build: ./db
+    build: ./mysql
     volumes:
-      - ./db:/var/lib/mysql
+      - mysql-data:/var/lib/mysql
     restart: always
     environment:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+      TZ: Asia/Seoul
 
+    command:
+      - --explicit_defaults_for_timestamp=1
+
+volumes:
+  mysql-data:
