@@ -248,7 +248,7 @@ class Poll {
         }]);
     }
 
-    stringifyClosed() {
+    stringifyBlockClosed() {
         return this.candidates.map((elem) => {
             return {
                 "type": "section",
@@ -285,8 +285,11 @@ class Poll {
         candidate.vote(voter, selected);
     }
 
-    getWinner() {
-        return this.candidates.reduce((prev, current) => (prev.voters.length > current.voters.length) ? prev : current);
+    getValences() {
+        return this.candidates.reduce((acc, elem) => {
+            acc[elem.id] = elem.valence;
+            return acc;
+        }, {});
     }
 }
 

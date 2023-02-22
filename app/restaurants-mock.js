@@ -122,8 +122,8 @@ class Restaurants {
         this.db.find((elem) => elem.id === id).score = 100.0;
     }
 
-    async decayScore(score) {
-        this.db.forEach((elem) => {elem.score /= 2;});
+    async decayScore(id, score) {
+        this.db.find((elem) => elem.id === id).score *= score;
     }
 }
 

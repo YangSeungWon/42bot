@@ -43,8 +43,8 @@ class Restaurants {
         return this.db.updateWithTimestamp(this.TABLE_NAME, { 'score': 100.0 }, { 'id': id });
     }
 
-    async decayScore() {
-        return this.db.multiply(this.TABLE_NAME, { 'score': 0.9 });
+    async decayScore(id, score) {
+        return this.db.multiply(this.TABLE_NAME, { 'score': score }, { 'id': id });
     }
 }
 

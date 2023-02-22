@@ -126,12 +126,18 @@ app.action('close_poll', async ({ body, ack, say }) => {
             unfurl_links: false,
         });
 
-        // poll.getValences()
-        await restaurants.decayScore();
-        
-        const id = poll.getWinner().id;
-        await restaurants.increaseCount(id);
-        await restaurants.maximizeScore(id);
+        const valences = poll.getValences();
+        let promises = [];
+        for (const id in valences) {
+            promises.push(restaurants.decayScore(id, (valences[id] - 1) / 8));
+        }
+        await Promise.all(promises);
+
+        const winnerId = Object.keys(valences).reduce((prev, curr) => 
+            valences[prev] > valences[curr] ? prev : curr
+        );
+        await restaurants.increaseCount(winnerId);
+        await restaurants.maximizeScore(winnerId);
     } catch (error) {
         console.error(error);
     }
