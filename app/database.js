@@ -59,7 +59,7 @@ class Database {
     const valuesList = [...Object.values(values), ...Object.values(where)];
 
     let sql = `UPDATE ${table} SET ${set}`;
-    if (where.keys) {
+    if (whereClause) {
       sql += ` WHERE ${whereClause}`;
     }
 
@@ -73,7 +73,7 @@ class Database {
     const valuesList = [...Object.values(values), ...Object.values(where)];
 
     let sql = `UPDATE ${table} SET ${set}, last_changed = NOW()`;
-    if (where.keys) {
+    if (whereClause) {
       sql += ` WHERE ${whereClause}`;
     }
 
@@ -87,7 +87,7 @@ class Database {
     const valuesList = [...Object.values(where)];
 
     let sql = `UPDATE ${table} SET ${set}`;
-    if (where.keys) {
+    if (whereClause) {
       sql += ` WHERE ${whereClause}`;
     }
 
@@ -101,7 +101,7 @@ class Database {
     const valuesList = [...Object.values(where)];
 
     let sql = `UPDATE ${table} SET ${set}`;
-    if (where.keys) {
+    if (whereClause) {
       sql += ` WHERE ${whereClause}`;
     }
 
@@ -114,7 +114,7 @@ class Database {
     const values = Object.values(where);
 
     let sql = `DELETE FROM ${table}`;
-    if (where.keys) {
+    if (whereClause) {
       sql += ` WHERE ${whereClause}`;
     }
 
