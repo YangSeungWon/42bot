@@ -1,56 +1,175 @@
-class Candidate {
-    constructor(id, name, url, count = 0, voters = [], block_id = 'unknown') {
-        this.id = id;
-        this.name = name;
-        this.url = url;
-        this.count = count;
+class Option {
+    constructor(emoji, voters = []) {
+        this.emoji = emoji;
         this.voters = voters;
-        this.block_id = block_id;
     }
 
     stringify() {
-        return `~${this.id}~ :arrow_forward: \
-<${this.url}|${this.name}> \
-\`${this.count}\` \
-${this.voters.join(', ')}`
+        return `${this.emoji} - ${this.voters.join(', ')}`;
     }
-
-    static parse(block) {
-        const matches = block.text.text.match(
-            /~(\d+)~ :arrow_forward: <([^\|]*)\|([^>]*)> `(\d+)` (.*)/
+    
+    static parse(option) {
+        const matches = option.text.text.match(
+            /(:[^ ]+:) - (.*)/
         );
         if (matches === null) {
             throw new Error('Provided option is malformed.');
         }
-        const id = matches[1];
-        const url = matches[2];
-        const name = matches[3];
-        const count = matches[4];
-        const voters = matches[5].split(', ');
-        return new Candidate(
-            parseInt(id, 10), name, url, parseInt(count, 10), voters,
-            block.block_id
-        );
+        const emoji = matches[1];
+        const voters = matches[2] ? matches[2].split(', ') : [];
+        return new Option(emoji, voters);
+    }
+
+    getValence() {
+        const valence = {
+            ':face_with_symbols_on_mouth:': 1,
+            ':face_with_raised_eyebrow:': 3,
+            ':yum:': 7,
+            ':heart_eyes:': 9,
+        };
+        return valence[this.emoji] * this.voters.length;
+    }
+
+    getNumVoters() {
+        return this.voters.length;
     }
 
     vote(voter) {
         if (this.voters.includes(voter)) {
-            this.unvote(voter);
-            return;
+            this.voters = this.voters.filter(elem => elem !== voter);
+        } else {
+            this.voters.push(voter);
         }
-        this.count += 1;
-        this.voters.push(voter);
     }
 
     unvote(voter) {
-        if (!this.voters.includes(voter)) {
-            this.vote(voter);
-            return;
+        this.voters = this.voters.filter(elem => elem !== voter);
+    }
+}
+
+class Preference {
+    constructor(options=null) {
+        if (!options) {
+            const base = [
+                ':face_with_symbols_on_mouth:',
+                ':face_with_raised_eyebrow:',
+                ':yum:',
+                ':heart_eyes:',
+            ];
+            this.options = base.map((elem) => new Option(elem));
+        } else {
+            this.options = options;
         }
-        this.count -= 1;
-        this.voters = this.voters.filter((elem) =>
-            elem !== voter
+    }
+
+    stringify() {
+        return this.options.map((elem) => {
+            elem.stringify()
+        }).join(' ');
+    }
+
+    stringifyBlock() {
+        return this.options.map((elem) => {
+            return {
+                "text": {
+                    "type": "plain_text",
+                    "text": elem.stringify(),
+                    "emoji": true,
+                },
+                "value": elem.emoji
+            }
+        })
+    }
+    
+    static parse(raw_options) {
+        let options = [];
+        for (let i = 0; i < raw_options.length; i++) {
+            options.push(
+                Option.parse(raw_options[i])
+            );
+        }
+        return new Preference(options);
+    }
+
+    getValence() {
+        const result = this.options.reduce((acc, obj) => {
+            acc.sum += obj.getValence();
+            acc.cnt += obj.getNumVoters();
+            return acc;
+        }, { sum: 0, cnt: 0 });
+        const avg = result.cnt !== 0 ? result.sum / result.cnt : 5.0;
+        return avg;
+    }
+
+    vote(voter, selected) {
+        this.options.forEach((elem) => {
+            if (elem.emoji === selected) {
+                elem.vote(voter);
+            } else {
+                elem.unvote(voter);
+            }
+        });
+    }
+}
+
+
+class Candidate {
+    constructor(id, name, url, valence = 5.0, preference = null, block_id = 'unknown') {
+        this.id = id;
+        this.name = name;
+        this.url = url;
+        this.valence = valence;
+        this.preference = preference ?? new Preference();
+        this.block_id = block_id;
+    }
+
+    stringify() {
+        this.updateValence();
+        return `~${this.id}~ :arrow_forward: \
+<${this.url}|${this.name}> \
+\`${this.valence}\``
+    }
+
+    stringifyBlock() {
+        return {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": this.stringify(),
+            },
+            "accessory": {
+                "type": "radio_buttons",
+                "options": this.preference.stringifyBlock(),
+                "action_id": "vote",
+            }
+        }
+    }
+
+    static parse(block) {
+        const matches = block.text.text.match(
+            /~(\d+)~ :arrow_forward: <([^\|]*)\|([^>]*)> `([\.\d]+)`/s
         );
+        if (matches === null) {
+            throw new Error('Provided option is malformed.');
+        }
+        const id = parseInt(matches[1], 10);
+        const url = matches[2];
+        const name = matches[3];
+        const valence = parseFloat(matches[4]);
+
+        const preference = Preference.parse(block.accessory.options);
+        return new Candidate(
+            id, name, url, valence, preference,
+            block.block_id
+        );
+    }
+
+    vote(voter, selected) {
+        this.preference.vote(voter, selected);
+    }
+
+    updateValence() {
+        this.valence = this.preference.getValence();
     }
 }
 
@@ -60,25 +179,10 @@ class Poll {
         this.candidates = [];
     }
 
-    stringify() {
-        return this.candidates.map((elem) => {
-            return {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": elem.stringify(),
-                },
-                "accessory": {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": ":white_check_mark:",
-                        "emoji": true,
-                    },
-                    "action_id": "vote",
-                }
-            }
-        }).concat([{
+    stringifyBlock() {
+        return this.candidates.map((elem) => 
+            elem.stringifyBlock()
+        ).concat([{
             "type": "divider",
         },
         {
@@ -174,18 +278,11 @@ class Poll {
         );
     }
 
-    vote(block_id, voter) {
+    vote(block_id, voter, selected) {
         const candidate = this.candidates.find((elem) =>
             elem.block_id === block_id
         );
-        candidate.vote(voter);
-    }
-
-    unvote(block_id, voter) {
-        const candidate = this.candidates.find((elem) =>
-            elem.block_id === block_id
-        );
-        candidate.unvote(voter);
+        candidate.vote(voter, selected);
     }
 
     getWinner() {

@@ -49,7 +49,7 @@ app.action('load_more_option', async ({ body, ack, say }) => {
         poll.add(res['id'], res['name'], res['url']);
 
         await web.chat.update({
-            blocks: poll.stringify(),
+            blocks: poll.stringifyBlock(),
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
@@ -95,7 +95,7 @@ app.action('add_option', async ({ ack, body, context }) => {
         poll.add(id, name, url);
 
         await web.chat.update({
-            blocks: poll.stringify(),
+            blocks: poll.stringifyBlock(),
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
@@ -118,7 +118,7 @@ app.action('close_poll', async ({ body, ack, say }) => {
         poll.parse(body.message.blocks);
 
         await web.chat.update({
-            blocks: poll.stringifyClosed(),
+            blocks: poll.stringifyBlockClosed(),
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
@@ -126,9 +126,11 @@ app.action('close_poll', async ({ body, ack, say }) => {
             unfurl_links: false,
         });
 
+        // poll.getValences()
+        await restaurants.decayScore();
+        
         const id = poll.getWinner().id;
         await restaurants.increaseCount(id);
-        await restaurants.decayScore();
         await restaurants.maximizeScore(id);
     } catch (error) {
         console.error(error);
@@ -142,10 +144,14 @@ app.action('vote', async ({ body, ack, say }) => {
 
         let poll = new Poll();
         poll.parse(body.message.blocks);
-        poll.vote(body.actions[0].block_id, `<@${body.user.id}>`);
+        poll.vote(
+            body.actions[0].block_id, 
+            `<@${body.user.id}>`, 
+            body.actions[0].selected_option.value
+        );
 
         await web.chat.update({
-            blocks: poll.stringify(),
+            blocks: poll.stringifyBlock(),
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
@@ -161,13 +167,13 @@ app.action('vote', async ({ body, ack, say }) => {
 app.command('/42', async ({ command, ack, say }) => {
     await ack();
 
-    const list = await restaurants.getInit(5);
+    const list = await restaurants.getInit(3);
     let poll = new Poll();
     for (let i = 0; i < list.length; i++) {
         poll.add(list[i]['id'], list[i]['name'], list[i]['url']);
     }
     await say({
-        blocks: poll.stringify(),
+        blocks: poll.stringifyBlock(),
         text: 'It is time to choose what to eat.',
         unfurl_links: false,
     });
