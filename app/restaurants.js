@@ -40,7 +40,7 @@ class Restaurants {
     }
 
     async maximizeScore(id) {
-        return this.db.update(this.TABLE_NAME, { 'score': 100.0 }, { 'id': id });
+        return this.db.updateWithTimestamp(this.TABLE_NAME, { 'score': 100.0 }, { 'id': id });
     }
 
     async decayScore() {
