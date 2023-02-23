@@ -91,6 +91,21 @@ class Preference {
         return new Preference(options);
     }
 
+    static getEmoji(valence) {
+        const score = (valence - 1) / 8;
+        if (score < 0.2) {
+            return ":large_red_square:";
+        } else if (score < 0.4) {
+            return ":large_orange_square:";
+        } else if (score < 0.6) {
+            return ":large_yellow_square:";
+        } else if (score < 0.8) {
+            return ":large_green_square:";
+        } else {
+            return ":large_blue_square:";
+        }
+    }
+
     getValence() {
         const result = this.options.reduce((acc, obj) => {
             acc.sum += obj.getValence();
@@ -125,7 +140,7 @@ class Candidate {
 
     stringify() {
         this.updateValence();
-        return `~${this.id}~ :arrow_forward: \
+        return `~${this.id}~ ${Preference.getEmoji(this.valence)} \
 <${this.url}|${this.name}> \
 \`${this.valence}\``
     }
@@ -147,7 +162,7 @@ class Candidate {
 
     static parse(block) {
         const matches = block.text.text.match(
-            /~(\d+)~ :arrow_forward: <([^\|]*)\|([^>]*)> `([\.\d]+)`/s
+            /~(\d+)~ :[^:]+: <([^\|]*)\|([^>]*)> `([\.\d]+)`/s
         );
         if (matches === null) {
             throw new Error('Provided option is malformed.');
