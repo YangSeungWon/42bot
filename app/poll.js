@@ -5,12 +5,12 @@ class Option {
     }
 
     stringify() {
-        return `${this.emoji} - ${this.voters.join(', ')}`;
+        return `${this.emoji} - \`${this.voters.length}\` ${this.voters.join(', ')}`;
     }
     
     static parse(option) {
         const matches = option.text.text.match(
-            /(:[^ ]+:) - (.*)/
+            /(:[^ ]+:) - \`[\d+]\` (.*)/
         );
         if (matches === null) {
             throw new Error('Provided option is malformed.');
@@ -20,14 +20,16 @@ class Option {
         return new Option(emoji, voters);
     }
 
-    getValence() {
-        const valence = {
-            ':face_with_symbols_on_mouth:': 1,
-            ':face_with_raised_eyebrow:': 3,
-            ':yum:': 7,
-            ':heart_eyes:': 9,
+    getScore() {
+        const score = {
+            ':heart_eyes:': +1,
+            ':face_with_symbols_on_mouth:': -1,
         };
-        return valence[this.emoji] * this.voters.length;
+        return score[this.emoji] * this.voters.length;
+    }
+
+    getVoters() {
+        return this.voters;
     }
 
     getNumVoters() {
@@ -51,10 +53,8 @@ class Preference {
     constructor(options=null) {
         if (!options) {
             const base = [
-                ':face_with_symbols_on_mouth:',
-                ':face_with_raised_eyebrow:',
-                ':yum:',
                 ':heart_eyes:',
+                ':face_with_symbols_on_mouth:',
             ];
             this.options = base.map((elem) => new Option(elem));
         } else {
@@ -72,9 +72,8 @@ class Preference {
         return this.options.map((elem) => {
             return {
                 "text": {
-                    "type": "plain_text",
+                    "type": "mrkdwn",
                     "text": elem.stringify(),
-                    "emoji": true,
                 },
                 "value": elem.emoji
             }
@@ -91,29 +90,17 @@ class Preference {
         return new Preference(options);
     }
 
-    static getEmoji(valence) {
-        const score = (valence - 1) / 8;
-        if (score < 0.2) {
+    static getEmoji(score) {
+        if (score <= 0) {
             return ":large_red_square:";
-        } else if (score < 0.4) {
-            return ":large_orange_square:";
-        } else if (score < 0.6) {
-            return ":large_yellow_square:";
-        } else if (score < 0.8) {
-            return ":large_green_square:";
         } else {
             return ":large_blue_square:";
         }
     }
 
-    getValence() {
-        const result = this.options.reduce((acc, obj) => {
-            acc.sum += obj.getValence();
-            acc.cnt += obj.getNumVoters();
-            return acc;
-        }, { sum: 0, cnt: 0 });
-        const avg = result.cnt !== 0 ? result.sum / result.cnt : 5.0;
-        return avg;
+    getScore() {
+        const result = this.options.reduce((sum, obj) => sum + obj.getScore(), 0);
+        return result;
     }
 
     vote(voter, selected) {
@@ -129,20 +116,20 @@ class Preference {
 
 
 class Candidate {
-    constructor(id, name, url, valence = 5.0, preference = null, block_id = 'unknown') {
+    constructor(id, name, url, score = 0.0, preference = null, block_id = 'unknown') {
         this.id = id;
         this.name = name;
         this.url = url;
-        this.valence = valence;
+        this.score = score;
         this.preference = preference ?? new Preference();
         this.block_id = block_id;
     }
 
     stringify() {
-        this.updateValence();
-        return `~${this.id}~ ${Preference.getEmoji(this.valence)} \
+        this.updateScore();
+        return `~${this.id}~ ${Preference.getEmoji(this.score)} \
 <${this.url}|${this.name}> \
-\`${this.valence}\``
+\`${this.score}\``
     }
 
     stringifyBlock() {
@@ -162,7 +149,7 @@ class Candidate {
 
     static parse(block) {
         const matches = block.text.text.match(
-            /~(\d+)~ :[^:]+: <([^\|]*)\|([^>]*)> `([\.\d]+)`/s
+            /~(\d+)~ :[^:]+: <([^\|]*)\|([^>]*)> `([-\.\d]+)`/s
         );
         if (matches === null) {
             throw new Error('Provided option is malformed.');
@@ -170,11 +157,11 @@ class Candidate {
         const id = parseInt(matches[1], 10);
         const url = matches[2];
         const name = matches[3];
-        const valence = parseFloat(matches[4]);
+        const score = parseFloat(matches[4]);
 
         const preference = Preference.parse(block.accessory.options);
         return new Candidate(
-            id, name, url, valence, preference,
+            id, name, url, score, preference,
             block.block_id
         );
     }
@@ -183,21 +170,67 @@ class Candidate {
         this.preference.vote(voter, selected);
     }
 
-    updateValence() {
-        this.valence = this.preference.getValence();
+    updateScore() {
+        this.score = this.preference.getScore();
+    }
+}
+
+
+class Information {
+
+    constructor(initTime = new Date().toLocaleString(), participants = []) {
+        this.initTime = initTime;
+        this.participants = new Set(participants);
+    }
+    
+    stringify() {
+        return `[42] ${this.initTime}, participants: \`${this.participants.size}\` - ${Array.from(this.participants).join(', ')}`;
+    }
+
+    stringifyBlock() {
+        return {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": this.stringify(),
+            }
+        };
+    }
+    
+    static parse(option) {
+        const matches = option.text.text.match(
+            /\[42\] (.+), participants: \`\d+\` - (.*)/
+        );
+        if (matches === null) {
+            throw new Error('Provided option is malformed.');
+        }
+        const initTime = matches[1];
+        const participants = matches[2] ? matches[2].split(', ') : [];
+        return new Information(initTime, participants);
+    }
+
+    participate(id) {
+        this.participants.add(id);
+    }
+
+    getNumParticipants() {
+        return this.participants.size;
     }
 }
 
 
 class Poll {
     constructor() {
+        this.information = new Information();
         this.candidates = [];
     }
 
     stringifyBlock() {
-        return this.candidates.map((elem) => 
+        return [
+            this.information.stringifyBlock()
+        ].concat(this.candidates.map((elem) => 
             elem.stringifyBlock()
-        ).concat([{
+        )).concat([{
             "type": "divider",
         },
         {
@@ -264,7 +297,9 @@ class Poll {
     }
 
     stringifyBlockClosed() {
-        return this.candidates.map((elem) => {
+        return [
+            this.information.stringifyBlock()
+        ].concat(this.candidates.map((elem) => {
             return {
                 "type": "section",
                 "text": {
@@ -272,7 +307,7 @@ class Poll {
                     "text": elem.stringify(),
                 },
             }
-        });
+        }));
     }
 
     parse(blocks) {
@@ -281,30 +316,45 @@ class Poll {
                 // Skip the last three elements
                 continue;
             }
+
+            if (i === 0) {
+                this.information = Information.parse(blocks[i]);
+                continue;
+            }
+
             this.candidates.push(
                 Candidate.parse(blocks[i])
             );
         }
     }
 
+    participate(id) {
+        this.information.participate(id);
+    }
+
     add(id, name, url) {
         this.candidates.push(
-            new Candidate(id, name, url)
+            new Candidate(parseInt(id,10), name, url)
         );
     }
 
     vote(block_id, voter, selected) {
+        this.participate(voter);
         const candidate = this.candidates.find((elem) =>
             elem.block_id === block_id
         );
         candidate.vote(voter, selected);
     }
 
-    getValences() {
+    getScores() {
         return this.candidates.reduce((acc, elem) => {
-            acc[elem.id] = elem.valence;
+            acc[elem.id] = elem.score;
             return acc;
         }, {});
+    }
+
+    getNumParticipants() {
+        return this.information.getNumParticipants();
     }
 }
 

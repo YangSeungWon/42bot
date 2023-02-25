@@ -126,15 +126,16 @@ app.action('close_poll', async ({ body, ack, say }) => {
             unfurl_links: false,
         });
 
-        const valences = poll.getValences();
+        const scores = poll.getScores();
+        const num = poll.getNumParticipants();
         let promises = [];
-        for (const id in valences) {
-            promises.push(restaurants.decayScore(id, (valences[id] - 1) / 8));
+        for (const id in scores) {
+            promises.push(restaurants.decayScore(id, Math.max(0, scores[id]) / num));
         }
         await Promise.all(promises);
 
-        const winnerId = Object.keys(valences).reduce((prev, curr) => 
-            valences[prev] > valences[curr] ? prev : curr
+        const winnerId = Object.keys(scores).reduce((prev, curr) => 
+            scores[prev] > scores[curr] ? prev : curr
         );
         await restaurants.increaseCount(winnerId);
         await restaurants.maximizeScore(winnerId);

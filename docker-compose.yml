@@ -4,7 +4,8 @@ services:
     build: ./nginx
     restart: always
     ports:
-      - 24842:80
+    environment:
+      TZ: Asia/Seoul
       
     links:
       - app
@@ -18,6 +19,7 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
+      TZ: Asia/Seoul
 
     links:
       - db
