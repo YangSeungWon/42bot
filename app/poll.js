@@ -91,8 +91,14 @@ class Preference {
     }
 
     static getEmoji(score) {
-        if (score <= 0) {
+        if (score <= 0.0) {
             return ":large_red_square:";
+        } else if (score <= 0.3) {
+            return ":large_orange_square:";
+        } else if (score <= 0.6) {
+            return ":large_yellow_square:";
+        } else if (score <= 0.9) {
+            return ":large_green_square:";
         } else {
             return ":large_blue_square:";
         }
@@ -116,10 +122,11 @@ class Preference {
 
 
 class Candidate {
-    constructor(id, name, url, score = 0.0, preference = null, block_id = 'unknown') {
+    constructor(id, name, url, numParticipants = 0, score = 0.0, preference = null, block_id = 'unknown') {
         this.id = id;
         this.name = name;
         this.url = url;
+        this.numParticipants = numParticipants
         this.score = score;
         this.preference = preference ?? new Preference();
         this.block_id = block_id;
@@ -127,7 +134,7 @@ class Candidate {
 
     stringify() {
         this.updateScore();
-        return `~${this.id}~ ${Preference.getEmoji(this.score)} \
+        return `~${this.id}~ ${Preference.getEmoji(this.score / Math.max(1, this.numParticipants))} \
 <${this.url}|${this.name}> \
 \`${this.score}\``
     }
@@ -147,7 +154,7 @@ class Candidate {
         }
     }
 
-    static parse(block) {
+    static parse(block, numParticipants) {
         const matches = block.text.text.match(
             /~(\d+)~ :[^:]+: <([^\|]*)\|([^>]*)> `([-\.\d]+)`/s
         );
@@ -161,7 +168,7 @@ class Candidate {
 
         const preference = Preference.parse(block.accessory.options);
         return new Candidate(
-            id, name, url, score, preference,
+            id, name, url, numParticipants, score, preference,
             block.block_id
         );
     }
@@ -323,7 +330,7 @@ class Poll {
             }
 
             this.candidates.push(
-                Candidate.parse(blocks[i])
+                Candidate.parse(blocks[i], this.information.getNumParticipants())
             );
         }
     }
@@ -334,7 +341,7 @@ class Poll {
 
     add(id, name, url) {
         this.candidates.push(
-            new Candidate(parseInt(id,10), name, url)
+            new Candidate(parseInt(id,10), name, url, this.information.getNumParticipants())
         );
     }
 
