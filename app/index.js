@@ -130,7 +130,7 @@ app.action('close_poll', async ({ body, ack, say }) => {
         const num = poll.getNumParticipants();
         let promises = [];
         for (const id in scores) {
-            promises.push(restaurants.decayScore(id, Math.max(0, scores[id]) / num));
+            promises.push(restaurants.decayScore(id, Math.max(0.5, scores[id] / num)));
         }
         await Promise.all(promises);
 
