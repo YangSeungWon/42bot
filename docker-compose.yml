@@ -4,6 +4,7 @@ services:
     build: ./nginx
     restart: always
     ports:
+      - 24842:80
     environment:
       TZ: Asia/Seoul
       
