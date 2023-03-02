@@ -33,7 +33,7 @@ class Database {
       sql += ' WHERE ' + keys.map(key => `${key} = ?`).join(' AND ');
     }
     if (orderBy) {
-      sql += ` ORDER BY ${mysql.escapeId(orderBy)}`;
+      sql += ` ORDER BY ${mysql.escapeId(orderBy)} DESC`;
     }
     if (limit_num) {
       sql += ` LIMIT ${limit_from}, ${limit_num}`;
