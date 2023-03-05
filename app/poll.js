@@ -273,7 +273,12 @@ class Poll {
         }));
     }
 
-    static async add(name) {
+    static async add(name, url) {
+        let id;
+        const res = await db.getByName(name)
+        if (!res || res.length === 0 || !res[0]) {
+            id = await db.create(name, url);
+        }
         return redis.addRestaurant(name);
     }
 

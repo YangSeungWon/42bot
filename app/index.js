@@ -65,21 +65,7 @@ app.action('add_option', async ({ ack, body, context }) => {
         const name = matches[1];
         const url = matches[2];
 
-        let id;
-        const res = await restaurants.getByName(name)
-        if (!res || res.length === 0 || !res[0]) {
-            id = await restaurants.create(name, url);
-        } else {
-            id = res[0].id;
-            if (poll.candidates.find((elem) =>
-                elem.name === name
-            )) {
-                postEphemeral(body.channel.id, body.user.id, 'The option you have added is already in the poll.');
-                return;
-            }
-        }
-
-        Poll.add(name);
+        await Poll.add(name, url);
 
         const poll = await Poll.load();
 
