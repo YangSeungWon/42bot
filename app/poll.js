@@ -158,7 +158,6 @@ class Poll {
     }
 
     static async init() {
-        // TODO: close previous poll
         await redis.removeData();
         return Promise.resolve(new Poll());
     }
@@ -223,6 +222,38 @@ class Poll {
                 "type": 'plain_text',
                 "text": "Add Option :whale2:",
             },
+        },
+        {
+            type: "actions",
+            elements: [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Cancel Poll",
+                        "emoji": true,
+                    },
+                    "confirm": {
+                        "title": {
+                            "type": "plain_text",
+                            "text": "Are you sure to cancel the poll?",
+                        },
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Please make sure that everyone has agreed to it.",
+                        },
+                        "confirm": {
+                            "type": "plain_text",
+                            "text": "Cancel it.",
+                        },
+                        "deny": {
+                            "type": "plain_text",
+                            "text": "Stop, I've changed my mind!",
+                        },
+                    },
+                    "action_id": "cancel_poll",
+                }
+            ]
         },
         {
             type: "actions",

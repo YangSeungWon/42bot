@@ -82,6 +82,32 @@ app.action('add_option', async ({ ack, body, context }) => {
 });
 
 
+async function close_msg(poll, cid, ts) {
+    return await web.chat.update({
+        blocks: poll.stringifyBlockClosed(),
+        text: 'It is time to choose what to eat.',
+        channel: cid,
+        ts: ts,
+        unfurl_links: false,
+    });
+}
+
+app.action('cancel_poll', async ({ body, ack, say }) => {
+    try {
+        await ack();
+        const { user, channel } = body;
+        await say(`<@${user.id}> canceled the poll in <#${channel.id}>`);
+
+        const poll = await Poll.load();
+        await Poll.close();
+
+        await close_msg(poll, body.channel.id, body.message.ts);
+
+    } catch (error) {
+        console.error(error);
+    }
+});
+
 app.action('close_poll', async ({ body, ack, say }) => {
     try {
         await ack();
@@ -91,13 +117,7 @@ app.action('close_poll', async ({ body, ack, say }) => {
         const poll = await Poll.load();
         await Poll.close();
 
-        await web.chat.update({
-            blocks: poll.stringifyBlockClosed(),
-            text: 'It is time to choose what to eat.',
-            channel: body.channel.id,
-            ts: body.message.ts,
-            unfurl_links: false,
-        });
+        await close_msg(poll, body.channel.id, body.message.ts);
 
         await poll.conclude();
 
