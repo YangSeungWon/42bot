@@ -302,9 +302,10 @@ class Poll {
             db.getAll(),
             redis.getRestaurants(),
         ]);
-        // TODO: remove already exists ones
 
-        return candidates.map((cand) => {
+        const ready = candidates.filter(cand => !options.includes(cand['name']))
+
+        return ready.map((cand) => {
             return {
                 text: {
                     type: 'plain_text',
