@@ -112,7 +112,7 @@ class Candidate {
 class Information {
 
     constructor(initTime = null, participants = []) {
-        this.initTime = (initTime ? new Date(initTime) : new Date()).toLocaleString();
+        this.initTime = (initTime ? new Date(initTime*1000) : new Date()).toLocaleString();
         this.participants = new Set(participants);
     }
     
