@@ -43,6 +43,31 @@ class Database {
     return result;
   }
 
+
+  async selectIn(table, where = {}, orderBy = '', limit_num = false, limit_from = 0) {
+    const keys = Object.keys(where);
+    const values = keys.map(key => where[key]);
+    let flattenValues = [];
+
+    let sql = `SELECT * FROM ${table}`;
+    if (keys.length > 0) {
+      sql += ' WHERE ' + keys.map((key, i) => {
+        flattenValues = flattenValues.concat(values[i]);
+        const _in = Array.from({ length: where[key].length }, () => '?').join(',');
+        return `${key} IN (${_in || '\'\''})`;
+      }).join(' AND ');
+    }
+    if (orderBy) {
+      sql += ` ORDER BY ${mysql.escapeId(orderBy)} DESC`;
+    }
+    if (limit_num) {
+      sql += ` LIMIT ${limit_from}, ${limit_num}`;
+    }
+
+    const result = await this.execute(sql, flattenValues);
+    return result;
+  }
+
   async insert(table, values) {
     const keys = Object.keys(values);
     const valuesList = Object.values(values);
@@ -72,7 +97,7 @@ class Database {
     const whereClause = Object.keys(where).map(key => `${mysql.escapeId(key)} = ?`).join(' AND ');
     const valuesList = [...Object.values(values), ...Object.values(where)];
 
-    let sql = `UPDATE ${table} SET ${set}, last_changed = NOW()`;
+    let sql = `UPDATE ${table} SET ${set}, lastOrder = NOW()`;
     if (whereClause) {
       sql += ` WHERE ${whereClause}`;
     }

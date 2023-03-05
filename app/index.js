@@ -8,21 +8,6 @@ const app = new App({
 const web = new WebClient(process.env.SLACK_BOT_TOKEN);
 const PORT = 24842;
 
-const debug = process.env.debug;
-let Restaurants;
-if (debug) {
-    Restaurants = require('./restaurants-mock');
-} else {
-    Restaurants = require('./restaurants');
-}
-const restaurants = new Restaurants({
-    host: 'db',
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE,
-});
-
-
 const Poll = require('./poll');
 
 
@@ -34,26 +19,31 @@ async function postEphemeral(channelId, userId, text) {
     });
 }
 
+app.options('load_more_option', async ({ options, ack }) => {
+    try {
+        const poll = await Poll.load();
+        const options = await poll.getPossibleOptions();
+        await ack({ options: options});
+    } catch (e) { 
+        console.error(e);
+        await ack();
+    }
+})
+
 
 app.action('load_more_option', async ({ body, ack, say }) => {
     try {
         await ack();
 
-        let poll = new Poll();
-        poll.parse(body.message.blocks);
-        const res = (await restaurants.getNext(poll.candidates.length))[0];
-        if (!res) {
-            postEphemeral(body.channel.id, body.user.id, 'There is no more options to load from the database.');
-            throw new Error('There is no more options to load from the database.');
-        }
-        poll.add(res['id'], res['name'], res['url']);
+        const selected = body.actions[0].selected_option.value;
+        await Poll.add(selected);
+        const poll = await Poll.load();
 
         await web.chat.update({
             blocks: poll.stringifyBlock(),
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
-            response_url: body.response_url,
             unfurl_links: false,
         });
     } catch (error) {
@@ -75,9 +65,6 @@ app.action('add_option', async ({ ack, body, context }) => {
         const name = matches[1];
         const url = matches[2];
 
-        let poll = new Poll();
-        poll.parse(body.message.blocks);
-
         let id;
         const res = await restaurants.getByName(name)
         if (!res || res.length === 0 || !res[0]) {
@@ -92,14 +79,15 @@ app.action('add_option', async ({ ack, body, context }) => {
             }
         }
 
-        poll.add(id, name, url);
+        Poll.add(name);
+
+        const poll = await Poll.load();
 
         await web.chat.update({
             blocks: poll.stringifyBlock(),
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
-            response_url: body.response_url,
             unfurl_links: false,
         });
     } catch (error) {
@@ -114,55 +102,47 @@ app.action('close_poll', async ({ body, ack, say }) => {
         const { user, channel } = body;
         await say(`<@${user.id}> closed the poll in <#${channel.id}>`);
 
-        let poll = new Poll();
-        poll.parse(body.message.blocks);
+        const poll = await Poll.load();
+        await Poll.close();
 
         await web.chat.update({
             blocks: poll.stringifyBlockClosed(),
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
-            response_url: body.response_url,
             unfurl_links: false,
         });
 
-        const scores = poll.getScores();
-        const num = poll.getNumParticipants();
-        let promises = [];
-        for (const id in scores) {
-            promises.push(restaurants.decayScore(id, Math.max(0, scores[id]) / num));
-        }
-        await Promise.all(promises);
+        await poll.conclude();
 
-        const winnerId = Object.keys(scores).reduce((prev, curr) => 
-            scores[prev] > scores[curr] ? prev : curr
-        );
-        await restaurants.increaseCount(winnerId);
-        await restaurants.maximizeScore(winnerId);
     } catch (error) {
         console.error(error);
     }
 });
 
-
 app.action('vote', async ({ body, ack, say }) => {
     try {
         await ack();
 
-        let poll = new Poll();
-        poll.parse(body.message.blocks);
-        poll.vote(
-            body.actions[0].block_id, 
-            `<@${body.user.id}>`, 
-            body.actions[0].selected_option.value
+        const matches = body.actions[0].selected_option.value.match(
+            /([^:]+):(.*)/
         );
+        const name = matches[1];
+        const liking = matches[2];
+
+        await Poll.vote(
+            name,
+            `<@${body.user.id}>`,
+            liking,
+        );
+
+        const poll = await Poll.load();
 
         await web.chat.update({
             blocks: poll.stringifyBlock(),
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
-            response_url: body.response_url,
             unfurl_links: false,
         });
     } catch (error) {
@@ -173,22 +153,20 @@ app.action('vote', async ({ body, ack, say }) => {
 
 app.command('/42', async ({ command, ack, say }) => {
     await ack();
-
-    const list = await restaurants.getInit(3);
-    let poll = new Poll();
-    for (let i = 0; i < list.length; i++) {
-        poll.add(list[i]['id'], list[i]['name'], list[i]['url']);
-    }
-    await say({
+    const poll = await Poll.init();
+    const response = await say({
         blocks: poll.stringifyBlock(),
         text: 'It is time to choose what to eat.',
         unfurl_links: false,
     });
+    const { channel, ts } = response;
+    await Poll.setup(channel, ts);
 });
 
 
 (async () => {
     await app.start(PORT);
     console.log('Listening...');
+    await Poll.connect();
 })();
 
