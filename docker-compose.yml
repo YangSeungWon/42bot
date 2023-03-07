@@ -24,6 +24,7 @@ services:
 
     links:
       - db
+      - redis
 
   db:
     build: ./mysql
@@ -39,6 +40,14 @@ services:
 
     command:
       - --explicit_defaults_for_timestamp=1
+
+  redis:
+    image: redis:5
+    command: "redis-server /redis.conf"
+    volumes:
+      - "${PWD}/redis/redis.conf:/redis.conf"
+    restart: always
+
 
 volumes:
   mysql-data:

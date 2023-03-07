@@ -16,7 +16,22 @@ class Restaurants {
     }
 
     async getByName(name) {
-        return this.db.select(this.TABLE_NAME, {'name': name});
+        return this.db.select(this.TABLE_NAME, { 'name': name });
+    }
+
+    async getByNames(names) {
+        const results = await this.db.selectIn(this.TABLE_NAME, { 'name': names });
+        const data = results.map(row => {
+            return {
+                id: row.id,
+                name: row.name,
+                url: row.url,
+                count: row.count,
+                score: row.score,
+                lastOrder: row.lastOrder,
+            };
+        });
+        return Promise.resolve(data);
     }
 
     async getAll() {

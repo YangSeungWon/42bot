@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
     url VARCHAR(255) NOT NULL,
     count INT UNSIGNED NOT NULL,
     score FLOAT NOT NULL,
-    last_changed TIMESTAMP
+    lastOrder TIMESTAMP
 );
 
 
