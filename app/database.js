@@ -107,7 +107,7 @@ class Database {
   }
 
   async increase(table, values, where = {}) {
-    const set = Object.keys(values).map(key => `${mysql.escapeId(key)} = ${mysql.escapeId(key)} + ${parseFloat(values[key],10)}`).join(', ');
+    const set = Object.keys(values).map(key => `${mysql.escapeId(key)} = ${mysql.escapeId(key)} + ${parseFloat(values[key])}`).join(', ');
     const whereClause = Object.keys(where).map(key => `${mysql.escapeId(key)} = ?`).join(' AND ');
     const valuesList = [...Object.values(where)];
 
@@ -121,7 +121,7 @@ class Database {
   }
 
   async multiply(table, values, where = {}) {
-    const set = Object.keys(values).map(key => `${mysql.escapeId(key)} = ${mysql.escapeId(key)} * ${parseFloat(values[key],10)}`).join(', ');
+    const set = Object.keys(values).map(key => `${mysql.escapeId(key)} = ${mysql.escapeId(key)} * ${parseFloat(values[key])}`).join(', ');
     const whereClause = Object.keys(where).map(key => `${mysql.escapeId(key)} = ?`).join(' AND ');
     const valuesList = [...Object.values(where)];
 
