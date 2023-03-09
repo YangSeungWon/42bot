@@ -126,11 +126,11 @@ app.action('close_poll', async ({ body, ack, say }) => {
     }
 });
 
-app.action('vote', async ({ body, ack, say }) => {
+app.action(/^vote.*/, async ({ body, ack, say }) => {
     try {
         await ack();
 
-        const matches = body.actions[0].selected_option.value.match(
+        const matches = body.actions[0].value.match(
             /([^:]+):(.*)/
         );
         const name = matches[1];
@@ -143,7 +143,6 @@ app.action('vote', async ({ body, ack, say }) => {
         );
 
         const poll = await Poll.load();
-
         await web.chat.update({
             blocks: poll.stringifyBlock(),
             text: 'It is time to choose what to eat.',

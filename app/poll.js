@@ -15,6 +15,16 @@ const db = new Restaurants({
 const RedisWrapper = require('./redis-wrapper');
 const redis = new RedisWrapper();
 
+function randomString() {
+    const length = 30;
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
 
 class Preference {
     constructor(name, liking, voters) {
@@ -36,16 +46,19 @@ class Preference {
     }
 
     stringify() {
-        return `${this.emoji} - \`${this.voters.length}\` ${this.voters.join(', ')}`;
+        return `${this.emoji.repeat(this.voters.length + 1)}`;
     }
 
     stringifyBlock() {
         return {
+            "type": "button",
             "text": {
-                "type": "mrkdwn",
+                "type": "plain_text",
                 "text": this.stringify(),
+                "emoji": true
             },
             "value": `${this.name}:${this.liking}`,
+            "action_id": `vote${randomString()}`
         };
     }
 
@@ -88,23 +101,25 @@ class Candidate {
 
     stringify() {
         return `${Preference.getEmoji(this.score / Math.max(1, this.numParticipants))} \
-<${this.url}|${this.name}> \
-\`${this.score}\``
+${this.score} : \
+${this.name}`
     }
 
     stringifyBlock() {
         return {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": this.stringify(),
-            },
-            "accessory": {
-                "type": "radio_buttons",
-                "options": this.preferences.map((pf) => pf.stringifyBlock()),
-                "action_id": "vote",
-            }
-        }
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": this.stringify(),
+						"emoji": true
+					},
+					"url": this.url,
+				}
+			].concat(this.preferences.map((pf) => pf.stringifyBlock()))
+		}
     }
 }
 
@@ -185,11 +200,24 @@ class Poll {
     }
 
     stringifyBlock() {
+        const insertIntoArray = (arr, value) => {
+            return arr.reduce((result, element, index, array) => {
+                result.push(element);
+                if (index < array.length - 1) {
+                    result.push(value);
+                }
+                return result;
+            }, []);
+        };
+
         return [
             this.information.stringifyBlock()
-        ].concat(this.candidates.map((elem) => 
-            elem.stringifyBlock()
-        )).concat([{
+        ].concat(
+            insertIntoArray(this.candidates.map((elem) => 
+                elem.stringifyBlock()
+            ), {"type": "divider",}
+        )
+        ).concat([{
             "type": "divider",
         },
         {
@@ -314,10 +342,10 @@ class Poll {
         return redis.addRestaurant(name);
     }
 
-    static async vote(block_id, voter, selected) {
+    static async vote(name, voter, selected) {
         return redis.vote(
             voter,
-            block_id,
+            name,
             selected,
         );
     }
