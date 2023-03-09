@@ -40,7 +40,7 @@ app.action('load_more_option', async ({ body, ack, say }) => {
         const poll = await Poll.load();
 
         await web.chat.update({
-            blocks: poll.stringifyBlock(),
+            blocks: poll.stringifyBlock(`<@${body.user.id}>`),
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
@@ -70,7 +70,7 @@ app.action('add_option', async ({ ack, body, context }) => {
         const poll = await Poll.load();
 
         await web.chat.update({
-            blocks: poll.stringifyBlock(),
+            blocks: poll.stringifyBlock(`<@${body.user.id}>`),
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
@@ -144,7 +144,7 @@ app.action(/^vote.*/, async ({ body, ack, say }) => {
 
         const poll = await Poll.load();
         await web.chat.update({
-            blocks: poll.stringifyBlock(),
+            blocks: poll.stringifyBlock(`<@${body.user.id}>`),
             text: 'It is time to choose what to eat.',
             channel: body.channel.id,
             ts: body.message.ts,
@@ -160,7 +160,7 @@ app.command('/42', async ({ command, ack, say }) => {
     await ack();
     const poll = await Poll.init();
     const response = await say({
-        blocks: poll.stringifyBlock(),
+        blocks: poll.stringifyBlock(''),
         text: 'It is time to choose what to eat.',
         unfurl_links: false,
     });

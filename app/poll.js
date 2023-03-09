@@ -49,8 +49,8 @@ class Preference {
         return `${this.emoji.repeat(this.voters.length + 1)}`;
     }
 
-    stringifyBlock() {
-        return {
+    stringifyBlock(user) {
+        let ret = {
             "type": "button",
             "text": {
                 "type": "plain_text",
@@ -59,7 +59,11 @@ class Preference {
             },
             "value": `${this.name}:${this.liking}`,
             "action_id": `vote${randomString()}`
-        };
+        }
+        if (this.voters.includes(user)) {
+            ret["style"] = "primary";
+        }
+        return ret;
     }
 
     static getEmoji(score) {
@@ -105,7 +109,7 @@ ${this.score} : \
 ${this.name}`
     }
 
-    stringifyBlock() {
+    stringifyBlock(user) {
         return {
 			"type": "actions",
 			"elements": [
@@ -118,7 +122,7 @@ ${this.name}`
 					},
 					"url": this.url,
 				}
-			].concat(this.preferences.map((pf) => pf.stringifyBlock()))
+			].concat(this.preferences.map((pf) => pf.stringifyBlock(user)))
 		}
     }
 }
@@ -199,7 +203,7 @@ class Poll {
         return name;
     }
 
-    stringifyBlock() {
+    stringifyBlock(user) {
         const insertIntoArray = (arr, value) => {
             return arr.reduce((result, element, index, array) => {
                 result.push(element);
@@ -214,7 +218,7 @@ class Poll {
             this.information.stringifyBlock()
         ].concat(
             insertIntoArray(this.candidates.map((elem) => 
-                elem.stringifyBlock()
+                elem.stringifyBlock(user)
             ), {"type": "divider",}
         )
         ).concat([{
