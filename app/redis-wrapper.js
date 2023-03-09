@@ -148,12 +148,7 @@ class RedisWrapper {
     }
 
     async removeData() {
-        return Promise.all([
-            client.del(KEY.CHANNELID),  
-            client.del(KEY.TIMESTAMP),  
-            client.del(KEY.PARTICIPANTS),   
-            client.del(KEY.RESTAURANTS),    
-        ]);
+        return client.flushAll();
     }
 }
 
