@@ -66,6 +66,10 @@ class RedisWrapper {
         return `${what}:${liking}`;
     }
 
+    async isVoted(who, what, liking) {
+        return client.sIsMember(this.keyRestaurantLiking(what, liking), who);
+    }
+
     async removeVoter(who, what) {
         return Promise.all(LIKING.map(async (value) => {
             return client.sRem(this.keyRestaurantLiking(what, value), who);
@@ -73,8 +77,12 @@ class RedisWrapper {
     }
 
     async _vote(who, what, liking) {
-        await this.removeVoter(who, what);
-        await client.sAdd(this.keyRestaurantLiking(what, liking), who);
+        if (await this.isVoted(who, what, liking)) {
+            await this.removeVoter(who, what);
+        } else {
+            await this.removeVoter(who, what);
+            await client.sAdd(this.keyRestaurantLiking(what, liking), who);
+        }
     }
 
     async vote(who, what, liking) {
