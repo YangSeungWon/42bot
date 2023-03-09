@@ -46,7 +46,7 @@ class Preference {
     }
 
     stringify() {
-        return `${this.emoji.repeat(this.voters.length + 1)}`;
+        return `${this.emoji} ${this.voters.length}`;
     }
 
     stringifyBlock(user) {
