@@ -35,7 +35,7 @@ class Restaurants {
     }
 
     async getAll() {
-        return this.db.select(this.TABLE_NAME, {}, 'score');
+        return this.db.select(this.TABLE_NAME, {}, 'name');
     }
 
     async getInit(num) {

@@ -148,6 +148,7 @@ class Poll {
                 const info = infos.filter((info) => info.name === restaurant)[0];
                 return new Candidate(restaurant, info, voters[restaurant], participants.length)
             });
+            this.candidates.sort((a, b) => b.score - a.score);
         } else {
             this.candidates = [];
         }
