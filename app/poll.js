@@ -135,16 +135,17 @@ class Information {
         this.participants = new Set(participants);
     }
     
-    stringify() {
-        return `[42] ${this.initTime}, participants: \`${this.participants.size}\` - ${Array.from(this.participants).join(', ')}`;
+    stringify(user) {
+        return `[42] ${this.initTime}, Participants: \`${this.participants.size}\` - ${Array.from(this.participants).join(', ')}
+Recently Edited: ${user}`;
     }
 
-    stringifyBlock() {
+    stringifyBlock(user) {
         return {
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": this.stringify(),
+                "text": this.stringify(user),
             }
         };
     }
@@ -215,7 +216,7 @@ class Poll {
         };
 
         return [
-            this.information.stringifyBlock()
+            this.information.stringifyBlock(user)
         ].concat(
             insertIntoArray(this.candidates.map((elem) => 
                 elem.stringifyBlock(user)
